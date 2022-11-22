@@ -103,12 +103,15 @@ void Widget::WidgetInit()
   tracer_->setBrush(QBrush(Qt::red));//圆圈圈内颜色
   tracer_->setStyle(QCPItemTracer::tsCircle);//圆圈
   tracer_->setSize(5);//设置大小
+  tracer_->setVisible(false);
+
 
   tracer_label_ = new QCPItemText(ui->control_plot); //生成游标说明
   tracer_label_->setLayer("overlay");//设置图层为overlay，因为需要频繁刷新
   tracer_label_->setPen(QPen(Qt::black));//设置游标说明颜色
   tracer_label_->setPositionAlignment(Qt::AlignLeft | Qt::AlignTop);//左上
   tracer_label_->position->setParentAnchor(tracer_->position);//将游标说明锚固在tracer位置处，实现自动跟随
+  tracer_label_->setVisible(false);
 
 
   //输出信息的lineEdit设置为只读
@@ -183,7 +186,7 @@ void Widget::UIInit(){
   ui->control_plot->legend->setSelectedFont(legendFont);
   ui->control_plot->legend->setSelectableParts(QCPLegend::spItems);
   ui->control_plot->legend->setVisible(false);
-//  //设置横纵坐标系精度
+  //设置横纵坐标系精度
 //  ui->control_plot->xAxis->setNumberPrecision(9);
   ui->control_plot->yAxis->setNumberPrecision(10);
   ui->control_plot->yAxis2->setNumberPrecision(10);
@@ -793,9 +796,7 @@ void Widget::PlayControlInfo(bool still)
       on_pushButton_pause_clicked();
       return;
     }
-    double x = control_end_;/*
-    double actual_y = control_info_[control_end_].actual_speed;
-    double expected_y = control_info_[control_end_].expected_speed;*/
+    double x = control_end_;
     for(int i = 0; i < 40 ; ++i)
     {
       double y = control_info_[control_end_].info[i];
@@ -812,11 +813,6 @@ void Widget::PlayControlInfo(bool still)
       ui->control_plot->xAxis->setRange(control_start_, control_start_ + 50);
     }
     ui->control_plot->replot();
-//    ui->control_plot->xAxis->rescale(true);
-//    ui->control_plot->rescaleAxes();
-
-//    PlotScatter(x,actual_y,Qt::black, control_graph_manage_.value("actual_speed"), false, 1, 3, true);
-//    PlotScatter(x,expected_y,Qt::darkYellow, control_graph_manage_.value("expected_speed"), false, 1, 3,true);
   }
 }
 
@@ -1238,7 +1234,10 @@ void Widget::on_pushButton_play_clicked()
   }
   else if(CheckPlayMode() == PlayMode::kCtrl)
   {
-    PlayControlInfo(true);
+    bool still  = true;
+    control_start_ = ui->lineEdit_start->text().toInt();
+    control_end_ = ui->lineEdit_end->text().toInt();
+    PlayControlInfo(still);
 //    AdjustPlotRange(false);
   }
   else if(CheckPlayMode() == PlayMode::KPrediction && vehicle_box_in_)
@@ -1311,7 +1310,8 @@ void Widget::on_pushButton_pre_clicked(){
     if(CheckEmpty(control_info_)){
       return;
     }
-    PlayControlInfo(false);
+    bool still = false;
+    PlayControlInfo(still);
   }else if(CheckPlayMode() == PlayMode::kICUAndPrediction){ //icu&prediction
     if(CheckEmpty(res) || CheckEmpty(prediction_info_)){
       return;
@@ -1358,6 +1358,7 @@ void Widget::on_pushButton_next_clicked()
     if(CheckEmpty(control_info_)){
       return;
     }
+    bool still = false;
     PlayControlInfo(false);
   }else if(CheckPlayMode() == PlayMode::kICUAndPrediction){ //icu&prediction
     if(CheckEmpty(res) || CheckEmpty(prediction_info_)){
@@ -1383,6 +1384,7 @@ void Widget::on_pushButton_next_clicked()
     ui->lineEdit_ctrl_sec->setText(QString::number(control_info_[control_end_].time.s));
     ui->lineEdit_ctrl_msec->setText(QString::number(control_info_[control_end_].time.ms));
 
+    bool still = false;
     PlayControlInfo(false);
   }else if(CheckPlayMode() == PlayMode::kAll){ //icu&prediction & control
     if(CheckEmpty(res) || CheckEmpty(control_info_) || CheckEmpty(prediction_info_)){
@@ -1541,6 +1543,7 @@ void Widget::on_pushButton_search_clicked()
          control_info_[i].time.s >= sec && control_info_[i].time.ms >= msec)
       {
         control_start_ = i;
+        bool still = true;
         PlayControlInfo(true);
         return;
       }
