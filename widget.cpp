@@ -47,6 +47,46 @@ int Widget::CheckPlayMode(){
   }
   return PlayMode::kError;
 }
+/*TimeStamp Widget::TimeSplit(QByteArray ba, bool CCU)
+{
+  QList<QByteArray> temp;
+  QByteArray temp_2;
+  TimeStamp time;
+  //CCU 2022-09-17-10:25:44.014
+  if(CCU){
+    temp = ba.split('-');
+    time.y = temp[0].toInt();
+    time.mon = temp[1].toShort();
+    time.d = temp[2].toShort();
+    temp = temp[3].split(':');
+    time.h = temp[0].toShort();
+    time.m = temp[1].toShort();
+    temp = temp[2].split('.');
+    time.s = temp[0].toShort();
+    time.ms = temp[1].toInt();
+  }
+  //ICU 2022-7-21 17:52:53:790
+  else{
+    temp = ba.split(' ');
+    temp_2 = temp[1];
+    temp = temp[0].split('-');
+    time.y = temp[0].toInt();
+    time.mon = temp[1].toShort();
+    time.d = temp[2].toShort();
+    temp = temp_2.split(':');
+    time.h = temp[0].toShort();
+    time.m = temp[1].toShort();
+    time.s = temp[2].toShort();
+    time.ms = temp[3].toInt();
+  }
+  return time;
+}*/
+
+int Widget::FindTime(QString time){
+  QByteArray ba = time.
+  return -1;
+}
+
 /* @brief:构造函数
  * @param [in]:NONE
  * @param [out]:NONE
@@ -739,8 +779,8 @@ void Widget::PlayControlInfo(bool still)
     if(CheckEmpty(control_info_)){
       QMessageBox::information(this, "Error", "没有控制信息！");
     }
-    int start = ui->lineEdit_start->text().toInt();
-    int end = ui->lineEdit_end->text().toInt();
+    int start = control_start_;
+    int end = control_end_;
     if(start < 1 || start > control_info_.size())
     {
       QMessageBox::information(this, "Error", "起始位置非法");

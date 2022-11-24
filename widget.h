@@ -91,6 +91,8 @@ private:
    *  -1 !!
    */
   int CheckPlayMode();
+  int FindTime(QString time);
+
 
   void TimerInit();
   void WidgetInit();
