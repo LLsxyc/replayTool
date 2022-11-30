@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1676</width>
-    <height>923</height>
+    <height>919</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -337,12 +337,6 @@
               </item>
               <item row="3" column="2">
                <widget class="QLineEdit" name="lineEdit_ctrl_msec"/>
-              </item>
-              <item row="5" column="2">
-               <widget class="QLineEdit" name="lineEdit_start_tine"/>
-              </item>
-              <item row="6" column="2">
-               <widget class="QLineEdit" name="lineEdit_end_time"/>
               </item>
              </layout>
             </item>

@@ -216,6 +216,7 @@ public:
   QPointF key_utm;
   double key_head;
   QPointF car[48][5];// 0车中心???1 2 3 4车身四个点
+  QPointF vehicle[4];
   bool is_impact;
   Obstacle obs;
   QVector<Obstacle> all_obs;
