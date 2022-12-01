@@ -111,7 +111,7 @@ private:
   void DispICUInfo();    //显示指定帧信息
 
 /*测试时间戳同步用临时函数*/
-  void InputCCUTempCsv(QFile &inFile);
+  void InputFrontSenseCsv(QFile &File);
 
   bool OpenFile();
   void InputCCUCsv(QFile &inFile);
@@ -163,7 +163,12 @@ private:
   QVector<CCUMap> ccu_map_;
   QVector<PredictionInfo> prediction_info_;
   QVector<ControlInfo> control_info_;
+  QVector<FrontSenseInfo> front_sense_info_;
+  QVector< QVector<QPointF> > car_box_info_;
+
   QVector< QVector<QPointF> > car_;
+  QVector< QVector<QPointF> > obstacle_;
+
 
   int prediction_index_;
   int control_start_, control_end_;
@@ -178,6 +183,7 @@ private:
   bool ccu_map_in_ = false;
   bool vehicle_box_in_ = false;
 
+  bool front_sense_info_in_ = false;
   bool icu_info_in_ = false;
   bool prediction_info_in_ = false;
   bool control_info_in_ = false;

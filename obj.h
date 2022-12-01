@@ -222,4 +222,13 @@ public:
   QVector<Obstacle> all_obs;
 };
 
+class FrontSenseInfo{
+public:
+  TimeStamp time;
+  double gps_lng;
+  double gps_lat;
+  double gps_heading;
+  QPointF car[4];
+  Obstacle obs;
+};
 #endif // OBJ_H

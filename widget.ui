@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1676</width>
-    <height>919</height>
+    <height>923</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -500,7 +500,7 @@
               <item row="2" column="0">
                <widget class="QLabel" name="label_obscount">
                 <property name="text">
-                 <string>障碍物数量</string>
+                 <string>障碍物角点数量</string>
                 </property>
                </widget>
               </item>

@@ -17,5 +17,6 @@ void calcCorner(double heading, QPointF centrid,QPointF * corner,double length, 
 void convertUTMToWGS84(double *longitude, double *latitude,  double utm_x, double utm_y);
 float distance(QPointF p1, QPointF p2);
 QPointF calcPoint(QPointF center, double head, double length);
+QPointF calcPoint(double gps_lng, double gps_lat, double head, QPointF point);
 
 #endif // CONVERT_H

@@ -580,96 +580,38 @@ void Widget::UpdateCarBox(){
   QPen pen;
   pen.setColor(Qt::black);
   pen.setStyle(Qt::SolidLine);
-  pen.setWidth(1);
+  pen.setWidth(5);
   int size = ui->prediction_plot->itemCount();
   for(int i = 0; i < size; ++i){
     ui->prediction_plot->removeItem(ui->prediction_plot->item(0));
   }
   car_arrows_.clear();
   car_arrows_.resize(1e7);//无穷大
-  if(!vehicle_box_in_){
-    if(prediction_info_.empty()){
-      return;
-    }else{
-      if(!test_){
-        int index = 0;
-        for(int i = 0; i < 48; ++i){
-          for(int j = 1; j < 4; ++j){ //0为车辆中心点
-            qDebug()<<QString::number(prediction_info_[prediction_index_].car[i][j].x(),'f',6)<<"  "
-                   <<QString::number(prediction_info_[prediction_index_].car[i][j].y(), 'f', 6);
-            car_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-            car_arrows_[index]->start->setCoords(prediction_info_[prediction_index_].car[i][j].x(),
-                                                 prediction_info_[prediction_index_].car[i][j].y());
-            car_arrows_[index]->end->setCoords(prediction_info_[prediction_index_].car[i][j+1].x(),
-                prediction_info_[prediction_index_].car[i][j+1].y());
-            car_arrows_[index]->setHead(QCPLineEnding::esNone);
-            car_arrows_[index]->setPen(pen);
-            index++;
-          } //for j
-          car_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-          car_arrows_[index]->start->setCoords(prediction_info_[prediction_index_].car[i][4].x(),
-              prediction_info_[prediction_index_].car[i][4].y());
-          car_arrows_[index]->end->setCoords(prediction_info_[prediction_index_].car[i][1].x(),
-              prediction_info_[prediction_index_].car[i][1].y());
-          car_arrows_[index]->setHead(QCPLineEnding::esNone);
-          car_arrows_[index]->setPen(pen);
-          index++;
-        }
-      }else{
-        int index = 0;
-        for(int i = 0; i < 3; ++i){
-//                  qDebug()<<QString::number(prediction_info_[prediction_index_].vehicle[i].x(),'f',6)<<"  "
-//                         <<QString::number(prediction_info_[prediction_index_].vehicle[i].y(), 'f', 6);
-          car_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-          car_arrows_[index]->start->setCoords(prediction_info_[prediction_index_].vehicle[i].x(),
-                                               prediction_info_[prediction_index_].vehicle[i].y());
-          car_arrows_[index]->end->setCoords(prediction_info_[prediction_index_].vehicle[i+1].x(),
-                                             prediction_info_[prediction_index_].vehicle[i+1].y());
-          car_arrows_[index]->setHead(QCPLineEnding::esNone);
-          car_arrows_[index]->setPen(pen);
-          index++;
-        } //for j
+  if(car_.empty()){
+    return;
+  }else{
+    int index = 0;
+    for(int i = 0; i < car_.size(); ++i){
+      for(int j = 0; j < car_[i].size() - 1; ++j){
+//        qDebug()<<QString::number(car_[i][j].x(),'f',6)<<"  "
+//               <<QString::number(car_[i][j].y(), 'f', 6);
         car_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-        car_arrows_[index]->start->setCoords(prediction_info_[prediction_index_].vehicle[3].x(),
-            prediction_info_[prediction_index_].vehicle[3].y());
-        car_arrows_[index]->end->setCoords(prediction_info_[prediction_index_].vehicle[0].x(),
-            prediction_info_[prediction_index_].vehicle[0].y());
+        car_arrows_[index]->start->setCoords(car_[i][j].x(), car_[i][j].y());
+        car_arrows_[index]->end->setCoords(car_[i][j+1].x(), car_[i][j+1].y());
         car_arrows_[index]->setHead(QCPLineEnding::esNone);
         car_arrows_[index]->setPen(pen);
         index++;
       }
-//      ui->prediction_plot->rescaleAxes();
-      ui->prediction_plot->replot();
-    }// if-else
-  }
-  else
-  {
-    if(car_.empty())
-    {
-      return;
+      car_arrows_[index] = new QCPItemLine(ui->prediction_plot);
+      car_arrows_[index]->start->setCoords(car_[i][car_[i].size() - 1].x(), car_[i][car_[i].size() - 1].y());
+      car_arrows_[index]->end->setCoords(car_[i][0].x(),car_[i][0].y());
+      car_arrows_[index]->setHead(QCPLineEnding::esNone);
+      car_arrows_[index]->setPen(pen);
+      index++;
     }
-    else
-    {
-      int index = 0;
-      for(int i = 0; i < car_.size(); ++i){
-        for(int j = 1; j < 4; ++j){ //0为车辆中心点
-          qDebug()<<QString::number(car_[i][j].x(),'f',6)<<"  "<<QString::number(car_[i][j].y(), 'f', 6);
-          car_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-          car_arrows_[index]->start->setCoords(car_[i][j].x(), car_[i][j].y());
-          car_arrows_[index]->end->setCoords(car_[i][j+1].x(), car_[i][j+1].y());
-          car_arrows_[index]->setHead(QCPLineEnding::esNone);
-          car_arrows_[index]->setPen(pen);
-          index++;
-        } //for j
-        car_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-        car_arrows_[index]->start->setCoords(car_[i][4].x(), car_[i][4].y());
-        car_arrows_[index]->end->setCoords(car_[i][1].x(), car_[i][1].y());
-        car_arrows_[index]->setHead(QCPLineEnding::esNone);
-        car_arrows_[index]->setPen(pen);
-        index++;
-      }// for i
-      ui->prediction_plot->replot();
-    }
+//    qDebug()<<"item size "<<ui->prediction_plot->itemCount();
+    ui->prediction_plot->replot();
+//    ui->prediction_plot->rescaleAxes();
   }
 }
 
@@ -677,39 +619,36 @@ void Widget::UpdateObsBox(){
   QPen pen;
   pen.setColor(Qt::red);
   pen.setStyle(Qt::SolidLine);
-  pen.setWidth(1);
+  pen.setWidth(5);
 //  int size = ui->prediction_plot->itemCount();
 //  for(int i = 0; i < size; ++i){
 //    ui->prediction_plot->removeItem(ui->prediction_plot->item(0));
 //  }
   obs_arrows_.clear();
   obs_arrows_.resize(1e7);//
-  qDebug() << prediction_info_[prediction_index_].obs.num;
-  if(prediction_info_.empty() || prediction_info_[prediction_index_].obs.num == 0){
+  if(obstacle_.empty()){
     return;
+
   }else{
     int index = 0;
-    int num = prediction_info_[prediction_index_].obs.num;
-    for(int i = 0; i < num - 1; ++i){
-      qDebug()<<QString::number(prediction_info_[prediction_index_].obs.vertex[i].x(),'f',6)<<"  "
-             <<QString::number(prediction_info_[prediction_index_].obs.vertex[i].y(), 'f', 6);
+    for(int i = 0; i < obstacle_.size() && obstacle_[i].size() > 0; ++i){
+      for(int j = 0; j < obstacle_[i].size() - 1; ++j){
+//        qDebug() << QString::number(obstacle_[i][j].x(),6,'f') << " "
+//                 << QString::number(obstacle_[i][j].y(),6,'f');
+        obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
+        obs_arrows_[index]->start->setCoords(obstacle_[i][j].x(), obstacle_[i][j].y());
+        obs_arrows_[index]->end->setCoords(obstacle_[i][j+1].x(), obstacle_[i][j+1].y());
+        obs_arrows_[index]->setHead(QCPLineEnding::esNone);
+        obs_arrows_[index]->setPen(pen);
+        index++;
+      }
       obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-      obs_arrows_[index]->start->setCoords(prediction_info_[prediction_index_].obs.vertex[i].x(),
-                                           prediction_info_[prediction_index_].obs.vertex[i].y());
-      obs_arrows_[index]->end->setCoords(prediction_info_[prediction_index_].obs.vertex[i+1].x(),
-          prediction_info_[prediction_index_].obs.vertex[i+1].y());
+      obs_arrows_[index]->start->setCoords(obstacle_[i][obstacle_[i].size() - 1].x(), obstacle_[i][obstacle_[i].size() - 1].y());
+      obs_arrows_[index]->end->setCoords(obstacle_[i][0].x(),obstacle_[i][0].y());
       obs_arrows_[index]->setHead(QCPLineEnding::esNone);
       obs_arrows_[index]->setPen(pen);
       index++;
     }
-    obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-    obs_arrows_[index]->start->setCoords(prediction_info_[prediction_index_].obs.vertex[num-1].x(),
-        prediction_info_[prediction_index_].obs.vertex[num-1].y());
-    obs_arrows_[index]->end->setCoords(prediction_info_[prediction_index_].obs.vertex[0].x(),
-        prediction_info_[prediction_index_].obs.vertex[0].y());
-    obs_arrows_[index]->setHead(QCPLineEnding::esNone);
-    obs_arrows_[index]->setPen(pen);
-    index++;
     ui->prediction_plot->replot();
   }
 }
@@ -740,21 +679,71 @@ void Widget::PlayICUFrame(){
 }
 
 void Widget::PlayPredictionInfo(){
+  QVector<QVector<QPointF>> null_car;
+  QVector<QVector<QPointF>> null_obs;
+  car_.swap(null_car);
+  obstacle_.swap(null_obs);
+  if(prediction_info_in_){
+    if(!vehicle_box_in_){
+      if(prediction_index_ < 0){
+        prediction_index_++;
+        QMessageBox::information(this, "Error", "已经是第一帧！");
+        return;
+      }
+      if(prediction_index_ >= prediction_info_.size()){
+        prediction_index_--;
+        on_pushButton_pause_clicked();
+        QMessageBox::information(this, "Error", "已经是最后一帧！");
+        return;
+      }
+      for(int i = 0; i < 48; ++i){
+        QVector<QPointF> car;
+        for(int j = 0; j < 4; ++j){
+          car.push_back(prediction_info_[prediction_index_].car[i][j+1]);
+        }
+        car_.push_back(car);
+      }
+      QVector<QPointF> obs(prediction_info_[prediction_index_].obs.vertex);
+      obstacle_.push_back(obs);
+      UpdateCarBox();
+      UpdateObsBox();
+      DispPredictionInfo();
+    }else{
+      for(int i = 0; i < car_box_info_.size(); ++i){
+        QVector<QPointF> car;
+        for(int j = 0; j < car_box_info_[i].size(); ++j){
+          car.push_back(car_box_info_[i][j+1]);
+        }
+        car_.push_back(car);
+      }
+      UpdateCarBox();
+    }
+  }else if(front_sense_info_in_){
+    if(prediction_index_ < 0){
+      prediction_index_++;
+      QMessageBox::information(this, "Error", "已经是第一帧！");
+      return;
+    }
+    if(prediction_index_ >= front_sense_info_.size()){
+      prediction_index_--;
+      on_pushButton_pause_clicked();
+      QMessageBox::information(this, "Error", "已经是最后一帧！");
+      return;
+    }
+    QVector<QPointF> car;
+    for(int j = 0; j < 4; ++j){
+      car.push_back(front_sense_info_[prediction_index_].car[j]);
+//      qDebug()<<QString::number(front_sense_info_[prediction_index_].car[j].x(),'f',6)<<"  "
+//               <<QString::number(front_sense_info_[prediction_index_].car[j].y(), 'f', 6);
+    }
+    car_.push_back(car);
+    QVector<QPointF> obs(front_sense_info_[prediction_index_].obs.vertex);
+    obstacle_.push_back(obs);
+    UpdateCarBox();
+    UpdateObsBox();
+    DispPredictionInfo();
+  }
 
-  if(prediction_index_ < 0){
-    prediction_index_++;
-    QMessageBox::information(this, "Error", "已经是第一帧！");
-    return;
-  }
-  if(prediction_index_ >= prediction_info_.size()){
-    prediction_index_--;
-    on_pushButton_pause_clicked();
-    QMessageBox::information(this, "Error", "已经是最后一帧！");
-    return;
-  }
-  UpdateCarBox();
-  UpdateObsBox();
-  DispPredictionInfo();
 }
 
 void Widget::PlayControlInfo(bool still)
@@ -1011,15 +1000,15 @@ void Widget::MousePress(QMouseEvent * event)
   float y_val;
   if(left_){
     y_val = ui->control_plot->yAxis->pixelToCoord(y_pos);
-    qDebug()<<"left";
+//    qDebug()<<"left";
   }
   else{
 //    y_val = ui->control_plot->yAxis2->pixelToCoord(y_pos);
      y_val = ui->control_plot->yAxis->pixelToCoord(y_pos);
-     qDebug()<<"right";
+//     qDebug()<<"right";
   }
   mouse_pos_ = QPointF(x_val, y_val);
-  qDebug() << mouse_pos_;
+//  qDebug() << mouse_pos_;
   bool select = false;
   for (int i=0; i<ui->control_plot->graphCount(); ++i)
   {
@@ -1271,7 +1260,7 @@ void Widget::on_pushButton_play_clicked()
   }
   else if(CheckPlayMode() == PlayMode::KPrediction && vehicle_box_in_)
   {
-    UpdateCarBox();
+    PlayPredictionInfo();
   }
   else
   {
@@ -1377,11 +1366,20 @@ void Widget::on_pushButton_next_clicked()
     frame_num_++;
     PlayICUFrame();
   }else if(CheckPlayMode() == PlayMode::KPrediction){//prediction
-    if(CheckEmpty(prediction_info_)){
-      return;
+    if(prediction_info_in_){
+      if(CheckEmpty(prediction_info_)){
+        return;
+      }
+      prediction_index_++;
+      PlayPredictionInfo();
+    }else if(front_sense_info_in_){
+      if(CheckEmpty(front_sense_info_)){
+        return;
+      }
+      prediction_index_++;
+      PlayPredictionInfo();
     }
-    prediction_index_++;
-    PlayPredictionInfo();
+
   }else if(CheckPlayMode() == PlayMode::kCtrl){ //control
     if(CheckEmpty(control_info_)){
       return;
@@ -1680,7 +1678,9 @@ bool Widget::OpenFile(){
     }
     else if(str_path.indexOf("result") != -1)//input prediction file
     {
+      prediction_index_ = 0;
       prediction_info_in_ = true;
+      front_sense_info_in_ = false;
       ui->checkBox_prediction->setEnabled(true);
       vehicle_box_in_ = false;
       test_ = false;
@@ -1695,10 +1695,12 @@ bool Widget::OpenFile(){
     }
     else if(str_path.indexOf("front") != -1)
     {
-      prediction_info_in_ = true;
+      prediction_index_ = 0;
+      prediction_info_in_ = false;
+      front_sense_info_in_ = true;
       ui->checkBox_prediction->setEnabled(true);
       vehicle_box_in_ = false;
-      InputCCUTempCsv(file);
+      InputFrontSenseCsv(file);
       test_ = true;
     }
     else if(str_path.indexOf("ccu") != -1)//input control file
@@ -1711,7 +1713,11 @@ bool Widget::OpenFile(){
     {
       InputMap(file,0);
     }
-    //        inFiles.push_back(file);
+    else if(str_path.indexOf("path") != -1)//input ccu map
+    {
+      qDebug() << "map!";
+      InputMap(file,0);
+    }
     qDebug() << "打开文件" << str_path << "成功！";
   }
   sort(res.begin(),res.end(),
@@ -1785,16 +1791,21 @@ void Widget::InputMap(QFile &inFile, int i)
     //路径文件
 
     if(i == 0 || i == 1){
+//    $,106,62.93,28.9821774,117.7522415,405.54,8.333,0,0,38,0,*02
       ccu_map_in_ = true;
-      float head = ba[7].toDouble();
-      float l_edge = ba[9].toDouble();
-      float r_edge = ba[10].toDouble();
+//      float head = ba[7].toDouble();
+//      float l_edge = ba[9].toDouble();
+//      float r_edge = ba[10].toDouble();
+      double x,y,z;
+      convertWGS84ToUTM(ba[4].toDouble(),ba[3].toDouble(), 0, &x, &y, &z);
+      point.setX(x);
+      point.setY(y);
 //      qDebug()<<QString::number(point.x(),'f',6)<<" "<<QString::number(point.y(),'f',6);
       if(point.x() > plot_max_x_) plot_max_x_ = point.x();
       if(point.x() < plot_min_x_) plot_min_x_ = point.x();
       if(point.y() > plot_max_y_) plot_max_y_ = point.y();
       if(point.y() < plot_min_y_) plot_min_y_ = point.y();
-      ccu_map_.push_back(CCUMap(point,l_edge,r_edge,head));
+      ccu_map_.push_back(CCUMap(point,0,0,0));
     }
     map[i].push_back(point);
     rawData = inFile.readLine();
@@ -2161,48 +2172,38 @@ void Widget::InputCCUCsv(QFile &infile){
 //      {
 //        qDebug()<<QString::number(car[i].x(),'f',6)<<"  "<<QString::number(car[i].y(), 'f', 6);
 //      }
-      car_.push_back(car);
+      car_box_info_.push_back(car);
       car.clear();
     }
   }
 }
 
-void Widget::InputCCUTempCsv(QFile &infile){
-  prediction_index_ = 0;
-  PredictionInfo info;
-  QByteArray raw_data = infile.readLine();
-  char a;
+void Widget::InputFrontSenseCsv(QFile &file){
+  QByteArray raw_data = file.readLine();
+  char a = ',';
   while(raw_data != ""){
-    raw_data = infile.readLine();
-    a = ',';
-    QList<QByteArray> ba = raw_data.split(a);
-    if(ba.size() < 84) continue;
-    TimeStamp time = TimeSplit(ba[0],true);
-    time.stamp = ba[1].toDouble();
-    info.time = time;
-
-    info.vehicle[0] = QPointF(ba[25].toDouble(), ba[26].toDouble());
-    info.vehicle[1] = QPointF(ba[27].toDouble(), ba[28].toDouble());
-    info.vehicle[2] = QPointF(ba[29].toDouble(), ba[30].toDouble());
-    info.vehicle[3] = QPointF(ba[31].toDouble(), ba[32].toDouble());
-//    info.vehicle[0] = QPointF(-3.05, -3.6);
-//    info.vehicle[1] = QPointF(-3.05, 9.7);
-//    info.vehicle[2] = QPointF(3.05, 9.7);
-//    info.vehicle[3] = QPointF(3.05, -3.6);
+    FrontSenseInfo info;
     Obstacle obs;
-    obs.num = ba[6].toInt() > 0 ? 4 : 0;
-    for(int i = 0; i < 4; ++i){
-      QPointF  point;
-      double head = ba[16].toDouble();
-      double xx = ba[46+2*i].toDouble() - 3.05;///* - 0.28*/;
-      double yy =ba[47+2*i].toDouble() + 9.7;//5.6/*8.96*/;
-      point.setX(info.vehicle[1] .x() + xx*cos(head * Pi / 180.0) + yy * sin(head * Pi / 180.0));
-      point.setY(info.vehicle[1] .y()  - xx*sin(head * Pi / 180.0) + yy*cos(head * Pi / 180.0));
-//      point = QPointF(ba[46+2*i].toDouble(), ba[47+2*i].toDouble());
-      obs.vertex.push_back(point);
+    raw_data = file.readLine();
+    QList<QByteArray> ba = raw_data.split(a);
+    if(ba.size() < 90) continue;
+    info.time = TimeSplit(ba[0],true);
+    info.gps_lng = ba[2].toDouble();
+    info.gps_lat = ba[3].toDouble();
+    info.gps_heading = ba[4].toDouble();
+    for(int i = 0; i < 4 ; ++i){
+      QPointF point;
+      point = QPointF(ba[28+2*i].toDouble(), ba[29+2*i].toDouble());
+      info.car[i] = calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point);
+    }
+    obs.num = ba[46].toInt();
+    for(int i = 0; i < obs.num; ++i){
+      QPointF point;
+      point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+      obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
     }
     info.obs = obs;
-    prediction_info_.push_back(info);
+    front_sense_info_.push_back(info);
   }
 }
 
@@ -2286,13 +2287,24 @@ void Widget::DispICUInfo()
 }
 
 void Widget::DispPredictionInfo(){
-  ui->lineEdit_framecount->setText(QString::number(prediction_info_.size()));
-  ui->lineEdit_obscount->setText(QString::number(prediction_info_[prediction_index_].obs.num));
-  ui->lineEdit_index->setText(QString::number(prediction_index_));
-  ui->lineEdit_hour->setText(QString::number(prediction_info_[prediction_index_].time.h));
-  ui->lineEdit_min->setText(QString::number(prediction_info_[prediction_index_].time.m));
-  ui->lineEdit_sec->setText(QString::number(prediction_info_[prediction_index_].time.s));
-  ui->lineEdit_msec->setText(QString::number(prediction_info_[prediction_index_].time.ms));
+  if(prediction_info_in_){
+    ui->lineEdit_framecount->setText(QString::number(prediction_info_.size()));
+    ui->lineEdit_obscount->setText(QString::number(prediction_info_[prediction_index_].obs.num));
+    ui->lineEdit_index->setText(QString::number(prediction_index_));
+    ui->lineEdit_hour->setText(QString::number(prediction_info_[prediction_index_].time.h));
+    ui->lineEdit_min->setText(QString::number(prediction_info_[prediction_index_].time.m));
+    ui->lineEdit_sec->setText(QString::number(prediction_info_[prediction_index_].time.s));
+    ui->lineEdit_msec->setText(QString::number(prediction_info_[prediction_index_].time.ms));
+  }else if(front_sense_info_in_){
+    ui->lineEdit_framecount->setText(QString::number(front_sense_info_.size()));
+    ui->lineEdit_obscount->setText(QString::number(front_sense_info_[prediction_index_].obs.num));
+    ui->lineEdit_index->setText(QString::number(prediction_index_));
+    ui->lineEdit_hour->setText(QString::number(front_sense_info_[prediction_index_].time.h));
+    ui->lineEdit_min->setText(QString::number(front_sense_info_[prediction_index_].time.m));
+    ui->lineEdit_sec->setText(QString::number(front_sense_info_[prediction_index_].time.s));
+    ui->lineEdit_msec->setText(QString::number(front_sense_info_[prediction_index_].time.ms));
+  }
+
 }
 
 double Widget::customSplit(QByteArray ba){
