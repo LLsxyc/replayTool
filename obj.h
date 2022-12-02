@@ -225,6 +225,7 @@ public:
 class FrontSenseInfo{
 public:
   TimeStamp time;
+  QPointF local_car[4];
   double gps_lng;
   double gps_lat;
   double gps_heading;

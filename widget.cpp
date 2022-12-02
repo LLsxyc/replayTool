@@ -738,6 +738,9 @@ void Widget::PlayPredictionInfo(){
 //      qDebug()<<QString::number(front_sense_info_[prediction_index_].car[j].x(),'f',6)<<"  "
 //               <<QString::number(front_sense_info_[prediction_index_].car[j].y(), 'f', 6);
     }
+    for(int j = 0; j < 4; ++j){
+      car[j]= front_sense_info_[prediction_index_].local_car[j];
+    }
     car_.push_back(car);
     QVector<QPointF> obs(front_sense_info_[prediction_index_].obs.vertex);
     obstacle_.push_back(obs);
@@ -2261,6 +2264,9 @@ void Widget::InputFrontSenseCsv(QFile &file){
     info.gps_lng = ba[2].toDouble();
     info.gps_lat = ba[3].toDouble();
     info.gps_heading = ba[4].toDouble();
+    double utm_x,utm_y,utm_z;
+    convertWGS84ToUTM(info.gps_lat, info.gps_lng, info.gps_heading, &utm_x, &utm_y ,&utm_z);
+    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 13.4, 6.7, 9.2);
     for(int i = 0; i < 4 ; ++i){
       QPointF point;
       double x = ba[28+2*i].toDouble();
