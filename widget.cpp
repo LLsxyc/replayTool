@@ -1470,10 +1470,17 @@ void Widget::on_pushButton_reset_clicked()
     frame_num_ =  num;
 //    PlayICUFrame();
   }else if(CheckPlayMode() == PlayMode::KPrediction){//prediction
-    if(CheckEmpty(prediction_info_)){
-      return;
+    if(prediction_info_in_){
+      if(CheckEmpty(prediction_info_)){
+        return;
+      }
+      prediction_index_ = num;
+    }else if(front_sense_info_in_){
+      if(CheckEmpty(front_sense_info_)){
+        return;
+      }
+      prediction_index_ = num;
     }
-    prediction_index_ = num;
 //    PlayPredictionInfo();
   }else if(CheckPlayMode() == PlayMode::kICUAndPrediction){ //icu&prediction
     if(CheckEmpty(res) || CheckEmpty(prediction_info_)){
@@ -1525,40 +1532,78 @@ void Widget::on_pushButton_search_clicked()
       }
   }else if(CheckPlayMode() == PlayMode::KPrediction || CheckPlayMode() == PlayMode::kPredictionAndControl){//prediction || prediction&&control
     if(hour == 0 && min == 0 && sec == 0 && msec == 0){
-      for(int i = prediction_index_; i < prediction_info_.size(); ++i)
-      {
-        if(prediction_info_[i].is_impact == 1)
+      if(prediction_info_in_){
+        for(int i = prediction_index_; i < prediction_info_.size(); ++i)
         {
-          prediction_index_ = i;
-          if(!test_)
-            PlayPredictionInfo();
-          return;
+          if(prediction_info_[i].is_impact == 1)
+          {
+            prediction_index_ = i;
+            if(!test_)
+              PlayPredictionInfo();
+            return;
+          }
         }
-      }
-      for(int i = 0; i < prediction_index_; ++i)
-      {
-        if(prediction_info_[i].is_impact == 1)
+        for(int i = 0; i < prediction_index_; ++i)
         {
-          prediction_index_ = i;
-          if(!test_)
-            PlayPredictionInfo();
-          return;
+          if(prediction_info_[i].is_impact == 1)
+          {
+            prediction_index_ = i;
+            if(!test_)
+              PlayPredictionInfo();
+            return;
+          }
+        }
+      }else if(front_sense_info_in_){
+        for(int i = prediction_index_; i < front_sense_info_.size(); ++i)
+        {
+          if(front_sense_info_[i].obs.num != 0)
+          {
+            prediction_index_ = i;
+            if(!test_)
+              PlayPredictionInfo();
+            return;
+          }
+        }
+        for(int i = 0; i < prediction_index_; ++i)
+        {
+          if(front_sense_info_[i].obs.num != 0)
+          {
+            prediction_index_ = i;
+            if(!test_)
+              PlayPredictionInfo();
+            return;
+          }
         }
       }
     }
     else
     {
-      for(int i = 0; i < prediction_info_.size(); ++i)
-      {
-        if(prediction_info_[i].time.h >= hour && prediction_info_[i].time.m >= min  &&
-           prediction_info_[i].time.s >= sec && prediction_info_[i].time.ms >= msec)
+      if(prediction_info_in_){
+        for(int i = 0; i < prediction_info_.size(); ++i)
         {
-          prediction_index_ = i;
-          if(!test_)
-            PlayPredictionInfo();
-          return;
+          if(prediction_info_[i].time.h >= hour && prediction_info_[i].time.m >= min  &&
+             prediction_info_[i].time.s >= sec && prediction_info_[i].time.ms >= msec)
+          {
+            prediction_index_ = i;
+            if(!test_)
+              PlayPredictionInfo();
+            return;
+          }
+        }
+      }else if(front_sense_info_in_){
+        for(int i = 0; i < front_sense_info_.size(); ++i)
+        {
+          if(front_sense_info_[i].time.h >= hour && front_sense_info_[i].time.m >= min  &&
+             front_sense_info_[i].time.s >= sec && front_sense_info_[i].time.ms >= msec)
+          {
+            prediction_index_ = i;
+            if(!test_)
+              PlayPredictionInfo();
+            return;
+          }
         }
       }
+
     }
   }else if(CheckPlayMode() == PlayMode::kCtrl){ //control
     for(int i = 0; i < control_info_.size(); ++i)
@@ -1793,19 +1838,19 @@ void Widget::InputMap(QFile &inFile, int i)
     if(i == 0 || i == 1){
 //    $,106,62.93,28.9821774,117.7522415,405.54,8.333,0,0,38,0,*02
       ccu_map_in_ = true;
-//      float head = ba[7].toDouble();
-//      float l_edge = ba[9].toDouble();
-//      float r_edge = ba[10].toDouble();
+      float head = ba[7].toDouble();
+      float l_edge = ba[9].toDouble();
+      float r_edge = ba[10].toDouble();
       double x,y,z;
-      convertWGS84ToUTM(ba[4].toDouble(),ba[3].toDouble(), 0, &x, &y, &z);
-      point.setX(x);
-      point.setY(y);
+//      convertWGS84ToUTM(ba[4].toDouble(),ba[3].toDouble(), 0, &x, &y, &z);
+//      point.setX(x);
+//      point.setY(y);
 //      qDebug()<<QString::number(point.x(),'f',6)<<" "<<QString::number(point.y(),'f',6);
       if(point.x() > plot_max_x_) plot_max_x_ = point.x();
       if(point.x() < plot_min_x_) plot_min_x_ = point.x();
       if(point.y() > plot_max_y_) plot_max_y_ = point.y();
       if(point.y() < plot_min_y_) plot_min_y_ = point.y();
-      ccu_map_.push_back(CCUMap(point,0,0,0));
+      ccu_map_.push_back(CCUMap(point,l_edge,r_edge,head));
     }
     map[i].push_back(point);
     rawData = inFile.readLine();
