@@ -573,7 +573,8 @@ void Widget::UpdateCCUMap(){
 //  PlotScatters(route, Qt::darkYellow, prediction_graph_manage_.value("map_route"), false, 1, 3, true);
   PlotScatters(route, Qt::black, prediction_graph_manage_.value("map_route"), false, 1, 3, true);
   ui->prediction_plot->rescaleAxes();
-  AdjustPlotRange(true);
+  ui->prediction_plot->replot();
+//  AdjustPlotRange(true);
 }
 
 void Widget::UpdateCarBox(){
@@ -610,6 +611,7 @@ void Widget::UpdateCarBox(){
       index++;
     }
 //    qDebug()<<"item size "<<ui->prediction_plot->itemCount();
+    AdjustPlotRange(true);
     ui->prediction_plot->replot();
 //    ui->prediction_plot->rescaleAxes();
   }
@@ -920,23 +922,46 @@ bool Widget::SearchSyncTime(PlayMode mode)
 void Widget::AdjustPlotRange(bool prediction){
   if(prediction)
   {
-    if(ccu_map_.empty())
+    if(!car_.empty())
     {
-      ui->prediction_plot->xAxis->setRange(415000,416250);
-      ui->prediction_plot->yAxis->setRange(4.62779e+06,4.62846e+06);
-      ui->prediction_plot->replot();
-      return;
-    }
-    else
-    {
-      double x_middle = (plot_max_x_ + plot_min_x_)/2;
-      double y_middle = (plot_max_y_ + plot_min_y_)/2;
-      double _long = (plot_max_x_ - plot_min_x_) > (plot_max_y_ - plot_min_y_) ? (plot_max_x_ - plot_min_x_):(plot_max_y_ - plot_min_y_);
-      double half_long = _long / 2.0;
+//      double min_x = ui->prediction_plot->xAxis->range().lower;
+//      double min_y = ui->prediction_plot->yAxis->range().lower;
+//      double max_x = ui->prediction_plot->xAxis->range().upper;
+//      double max_y = ui->prediction_plot->yAxis->range().upper;
 
-      ui->prediction_plot->xAxis->setRange(x_middle - half_long -5e-4,x_middle + half_long + 5e-4);
-      ui->prediction_plot->yAxis->setRange(y_middle - half_long -5e-4,y_middle + half_long + 5e-4);
-      ui->prediction_plot->replot();
+//      for(int i = 0; i < car_.size(); ++i){
+//        for(int j = 0; j < car_[i].size(); ++j){
+//          if(car_[i][j].x() < max_x) max_x = car_[i][j].x();
+//          if(car_[i][j].x() > min_x && car_[i][j].x() != 0) min_x = car_[i][j].x();
+//          if(car_[i][j].y() < max_y) max_y = car_[i][j].y();
+//          if(car_[i][j].y() > min_y && car_[i][j].y() != 0) min_y = car_[i][j].y();
+//        }
+//      }
+
+//      double x_middle = (max_x + min_x)/2;
+//      double y_middle = (max_y + min_y)/2;
+//      double _long = (max_x - min_x) > (max_y - min_y) ? (max_x - min_x):(max_y - min_y);
+//      double half_long = _long / 2.0;
+//      if(min_x != ui->prediction_plot->xAxis->range().lower &&
+//         min_y != ui->prediction_plot->yAxis->range().lower &&
+//         max_x != ui->prediction_plot->xAxis->range().upper &&
+//         max_y != ui->prediction_plot->yAxis->range().upper){
+//        ui->prediction_plot->xAxis->setRange(x_middle - half_long -300,x_middle + half_long + 10000);
+//        ui->prediction_plot->yAxis->setRange(y_middle - half_long -300,y_middle + half_long + 10000);
+//        ui->prediction_plot->replot();
+//      }
+      QPointF max_p(0,0);
+      for(int i = 0; i < car_.size(); ++i){
+        for(int j = 0; j < car_[i].size(); ++j){
+          if(car_[i][j].x() > max_p.x() ) max_p.setX(car_[i][j].x());
+          if(car_[i][j].y() > max_p.y() ) max_p.setY(car_[i][j].y());
+        }
+      }
+      if(max_p.x() != 0 && max_p.y() != 0){
+        ui->prediction_plot->xAxis->setRange(max_p.x() - 100,max_p.x() + 100);
+        ui->prediction_plot->yAxis->setRange(max_p.y()- 100, max_p.y() + 100);
+        ui->prediction_plot->replot();
+      }
     }
   }
   else
@@ -1299,7 +1324,7 @@ void Widget::on_pushButton_play_clicked()
 void Widget::on_pushButton_pause_clicked(){
   fTimer_->stop();
   if(icu_info_in_) ui->checkBox_icu->setEnabled(true);
-  if(prediction_info_in_) ui->checkBox_prediction->setEnabled(true);
+  if(prediction_info_in_ || front_sense_info_in_) ui->checkBox_prediction->setEnabled(true);
   if(control_info_in_) ui->checkBox_control->setEnabled(true);
   ui->pushButton_play->setEnabled(true);
   ui->pushButton_pause->setEnabled(false);
@@ -2238,8 +2263,14 @@ void Widget::InputFrontSenseCsv(QFile &file){
     info.gps_heading = ba[4].toDouble();
     for(int i = 0; i < 4 ; ++i){
       QPointF point;
-      point = QPointF(ba[28+2*i].toDouble(), ba[29+2*i].toDouble());
-      info.car[i] = calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point);
+      double x = ba[28+2*i].toDouble();
+      double y = ba[29+2*i].toDouble();
+      if(x == 0 && y ==0){
+          info.car[i] = QPointF(0,0);
+      }else{
+        point = QPointF(ba[28+2*i].toDouble(), ba[29+2*i].toDouble());
+        info.car[i] = calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point);
+      }
     }
     obs.num = ba[46].toInt();
     for(int i = 0; i < obs.num; ++i){
