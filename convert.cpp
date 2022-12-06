@@ -127,7 +127,7 @@ QPointF calcPoint(double gps_lng, double gps_lat, double head, QPointF point){
   convertWGS84ToUTM(gps_lat, gps_lng, head, &utm_x, &utm_y ,&utm_z);
 //qDebug() <<"utm"<< QString::number(utm_x,6,'f') << " "
 //                 << QString::number(utm_y,6,'f');
-         Eigen::Matrix<double,2,2> rotation_matrix;
+  Eigen::Matrix<double,2,2> rotation_matrix;
   rotation_matrix << cos(heading),sin(heading),
                     -sin(heading),cos(heading);
   Eigen::Matrix<double,2,1> traslation_matrix;
@@ -137,6 +137,4 @@ QPointF calcPoint(double gps_lng, double gps_lat, double head, QPointF point){
   Eigen::Matrix<double,2,1> result_mat = rotation_matrix * origin + traslation_matrix;
   result = QPointF(result_mat(0,0), result_mat(1,0));
   return result;
-
-
 }

@@ -633,10 +633,13 @@ void Widget::UpdateObsBox(){
 
   }else{
     int index = 0;
+    qDebug()<<"obs start";
     for(int i = 0; i < obstacle_.size() && obstacle_[i].size() > 0; ++i){
       for(int j = 0; j < obstacle_[i].size() - 1; ++j){
 //        qDebug() << QString::number(obstacle_[i][j].x(),6,'f') << " "
 //                 << QString::number(obstacle_[i][j].y(),6,'f');
+        qDebug() << QString("%1").arg(obstacle_[i][j].x(), 0, 'f', 10)
+                 << QString("%1").arg(obstacle_[i][j].y(), 0, 'f', 10);
         obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
         obs_arrows_[index]->start->setCoords(obstacle_[i][j].x(), obstacle_[i][j].y());
         obs_arrows_[index]->end->setCoords(obstacle_[i][j+1].x(), obstacle_[i][j+1].y());
@@ -644,6 +647,8 @@ void Widget::UpdateObsBox(){
         obs_arrows_[index]->setPen(pen);
         index++;
       }
+      qDebug() << QString("%1").arg(obstacle_[i][obstacle_[i].size() - 1].x(), 0, 'f', 10)
+                 << QString("%1").arg(obstacle_[i][obstacle_[i].size() - 1].y(), 0, 'f', 10);
       obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
       obs_arrows_[index]->start->setCoords(obstacle_[i][obstacle_[i].size() - 1].x(), obstacle_[i][obstacle_[i].size() - 1].y());
       obs_arrows_[index]->end->setCoords(obstacle_[i][0].x(),obstacle_[i][0].y());
@@ -651,6 +656,7 @@ void Widget::UpdateObsBox(){
       obs_arrows_[index]->setPen(pen);
       index++;
     }
+    qDebug()<<"obs end";
     ui->prediction_plot->replot();
   }
 }
@@ -738,6 +744,7 @@ void Widget::PlayPredictionInfo(){
 //      qDebug()<<QString::number(front_sense_info_[prediction_index_].car[j].x(),'f',6)<<"  "
 //               <<QString::number(front_sense_info_[prediction_index_].car[j].y(), 'f', 6);
     }
+    car_.push_back(car);
     for(int j = 0; j < 4; ++j){
       car[j]= front_sense_info_[prediction_index_].local_car[j];
     }
@@ -953,16 +960,21 @@ void Widget::AdjustPlotRange(bool prediction){
 //        ui->prediction_plot->yAxis->setRange(y_middle - half_long -300,y_middle + half_long + 10000);
 //        ui->prediction_plot->replot();
 //      }
+//      if(car_[0][0].x() == 0 && car_[0][0].y() == 0) return;
       QPointF max_p(0,0);
+      QPointF min_p(10000000,10000000);
+
       for(int i = 0; i < car_.size(); ++i){
         for(int j = 0; j < car_[i].size(); ++j){
           if(car_[i][j].x() > max_p.x() ) max_p.setX(car_[i][j].x());
           if(car_[i][j].y() > max_p.y() ) max_p.setY(car_[i][j].y());
+          if(car_[i][j].x() < min_p.x() && car_[i][j].x() != 0) min_p.setX(car_[i][j].x());
+          if(car_[i][j].y() < min_p.y() && car_[i][j].y() != 0) min_p.setY(car_[i][j].y());
         }
       }
       if(max_p.x() != 0 && max_p.y() != 0){
-        ui->prediction_plot->xAxis->setRange(max_p.x() - 100,max_p.x() + 100);
-        ui->prediction_plot->yAxis->setRange(max_p.y()- 100, max_p.y() + 100);
+        ui->prediction_plot->xAxis->setRange(min_p.x() - 15,max_p.x() + 15);
+        ui->prediction_plot->yAxis->setRange(min_p.y() - 15, max_p.y() + 15);
         ui->prediction_plot->replot();
       }
     }
@@ -1801,6 +1813,10 @@ bool Widget::OpenFile(){
        [](const PredictionInfo &a, const PredictionInfo &b){
     return a.time < b.time;
   });
+  sort(front_sense_info_.begin(),front_sense_info_.end(),
+       [](const FrontSenseInfo &a, const FrontSenseInfo &b){
+    return a.time < b.time;
+  });
   sort(control_info_.begin(),control_info_.end(),
        [](const ControlInfo &a, const ControlInfo &b){
     return a.time < b.time;
@@ -2261,9 +2277,9 @@ void Widget::InputFrontSenseCsv(QFile &file){
     QList<QByteArray> ba = raw_data.split(a);
     if(ba.size() < 90) continue;
     info.time = TimeSplit(ba[0],true);
-    info.gps_lng = ba[2].toDouble();
-    info.gps_lat = ba[3].toDouble();
-    info.gps_heading = ba[4].toDouble();
+    info.gps_lng = ba[2+1].toDouble();
+    info.gps_lat = ba[3+1].toDouble();
+    info.gps_heading = ba[4+1].toDouble();
     double utm_x,utm_y,utm_z;
     convertWGS84ToUTM(info.gps_lat, info.gps_lng, info.gps_heading, &utm_x, &utm_y ,&utm_z);
     calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 13.4, 6.7, 9.2);
@@ -2287,6 +2303,10 @@ void Widget::InputFrontSenseCsv(QFile &file){
     info.obs = obs;
     front_sense_info_.push_back(info);
   }
+  sort(front_sense_info_.begin(),front_sense_info_.end(),
+       [](const FrontSenseInfo &a, const FrontSenseInfo &b){
+    return a.time > b.time;
+  });
 }
 
 void Widget::InputControlCsv(QFile &infile){
