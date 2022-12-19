@@ -862,64 +862,125 @@ bool Widget::SearchSyncTime(PlayMode mode)
   }
   else if (mode == PlayMode::kPredictionAndControl)//prediction&&control
   {
-//    qDebug()<<control_end_;
-    if(control_info_[sync_ctrl_index_].time > prediction_info_[prediction_index_].time)
-    {
-//      qDebug()<<"prediction";
-      initial = control_info_[sync_ctrl_index_].time;
-      sync_ctrl = sync_ctrl_index_;
-    }
-    else if(control_info_[sync_ctrl_index_].time < prediction_info_[prediction_index_].time)
-    {
-//      qDebug()<<"control";
-      initial = prediction_info_[prediction_index_].time;
-      sync_prediction = prediction_index_;
-    }
-    else if(control_info_[sync_ctrl_index_].time == prediction_info_[prediction_index_].time)
-    {
-//      control_end_ = control_end_;
-//      qDebug()<<"equal";
-      control_start_ = sync_ctrl_index_;
-      control_end_ = control_start_;
-      return true;
-    }
-    for(int i_ctrl = sync_ctrl_index_, i_prediction = prediction_index_; i_ctrl < control_info_.size() && i_prediction < prediction_info_.size(); )
-    {
-      if(sync_ctrl != -1)
+    if(prediction_info_in_){
+      if(control_info_[sync_ctrl_index_].time > prediction_info_[prediction_index_].time)
       {
-        if(initial == prediction_info_[i_prediction].time)
+        //      qDebug()<<"prediction";
+        initial = control_info_[sync_ctrl_index_].time;
+        sync_ctrl = sync_ctrl_index_;
+      }
+      else if(control_info_[sync_ctrl_index_].time < prediction_info_[prediction_index_].time)
+      {
+        //      qDebug()<<"control";
+        initial = prediction_info_[prediction_index_].time;
+        sync_prediction = prediction_index_;
+      }
+      else if(control_info_[sync_ctrl_index_].time == prediction_info_[prediction_index_].time)
+      {
+        //      control_end_ = control_end_;
+        //      qDebug()<<"equal";
+        control_start_ = sync_ctrl_index_;
+        control_end_ = control_start_;
+        return true;
+      }
+      for(int i_ctrl = sync_ctrl_index_, i_prediction = prediction_index_; i_ctrl < control_info_.size() && i_prediction < prediction_info_.size(); )
+      {
+        if(sync_ctrl != -1)
         {
-          sync_prediction = i_prediction;
-          break;
+          if(initial == prediction_info_[i_prediction].time)
+          {
+            sync_prediction = i_prediction;
+            break;
+          }
+          else
+          {
+            i_prediction++;
+          }
         }
-        else
+        else if(sync_prediction != -1)
         {
-          i_prediction++;
+          if(initial == control_info_[i_ctrl].time)
+          {
+            sync_ctrl = i_ctrl;
+            break;
+          }
+          else
+          {
+            i_ctrl++;
+          }
         }
       }
-      else if(sync_prediction != -1)
+      if(sync_ctrl < 0 || sync_prediction < 0)
       {
-        if(initial == control_info_[i_ctrl].time)
-        {
-          sync_ctrl = i_ctrl;
-          break;
-        }
-        else
-        {
-          i_ctrl++;
-        }
+        return false;
+      }
+      else
+      {
+        control_start_ = sync_ctrl;
+        control_end_ = sync_ctrl;
+        prediction_index_ = sync_prediction;
+        return true;
       }
     }
-    if(sync_ctrl < 0 || sync_prediction < 0)
-    {
-      return false;
-    }
-    else
-    {
-      control_start_ = sync_ctrl;
-      control_end_ = sync_ctrl;
-      prediction_index_ = sync_prediction;
-      return true;
+    else if(front_sense_info_in_){
+      if(control_info_[sync_ctrl_index_].time > front_sense_info_[prediction_index_].time)
+      {
+        //      qDebug()<<"prediction";
+        initial = control_info_[sync_ctrl_index_].time;
+        sync_ctrl = sync_ctrl_index_;
+      }
+      else if(control_info_[sync_ctrl_index_].time < front_sense_info_[prediction_index_].time)
+      {
+        //      qDebug()<<"control";
+        initial = front_sense_info_[prediction_index_].time;
+        sync_prediction = prediction_index_;
+      }
+      else if(control_info_[sync_ctrl_index_].time == front_sense_info_[prediction_index_].time)
+      {
+        //      control_end_ = control_end_;
+        //      qDebug()<<"equal";
+        control_start_ = sync_ctrl_index_;
+        control_end_ = control_start_;
+        return true;
+      }
+      for(int i_ctrl = sync_ctrl_index_, i_prediction = prediction_index_; i_ctrl < control_info_.size() && i_prediction < front_sense_info_.size(); )
+      {
+        if(sync_ctrl != -1)
+        {
+          if(initial == front_sense_info_[i_prediction].time)
+          {
+            sync_prediction = i_prediction;
+            break;
+          }
+          else
+          {
+            i_prediction++;
+          }
+        }
+        else if(sync_prediction != -1)
+        {
+          if(initial == control_info_[i_ctrl].time)
+          {
+            sync_ctrl = i_ctrl;
+            break;
+          }
+          else
+          {
+            i_ctrl++;
+          }
+        }
+      }
+      if(sync_ctrl < 0 || sync_prediction < 0)
+      {
+        return false;
+      }
+      else
+      {
+        control_start_ = sync_ctrl;
+        control_end_ = sync_ctrl;
+        prediction_index_ = sync_prediction;
+        return true;
+      }
     }
   }
   else if(mode == 5)//icu&&prediction&&control
@@ -1432,18 +1493,32 @@ void Widget::on_pushButton_next_clicked()
     //TODO icu&prediction数据播放
 
   }else if(CheckPlayMode() == PlayMode::kPredictionAndControl){ //prediction & control
-    if(CheckEmpty(control_info_) || CheckEmpty(prediction_info_)){
-      return;
+    if(prediction_info_in_){
+      if(CheckEmpty(control_info_) || CheckEmpty(prediction_info_)){
+        return;
+      }
+    }
+    else if(front_sense_info_in_){
+      if(CheckEmpty(control_info_) || CheckEmpty(front_sense_info_)){
+        return;
+      }
     }
     control_end_++;
     prediction_index_++;
 //    if(!test_)
     PlayPredictionInfo();
-    ui->lineEdit_hour->setText(QString::number(prediction_info_[prediction_index_].time.h));
-    ui->lineEdit_min->setText(QString::number(prediction_info_[prediction_index_].time.m));
-    ui->lineEdit_sec->setText(QString::number(prediction_info_[prediction_index_].time.s));
-    ui->lineEdit_msec->setText(QString::number(prediction_info_[prediction_index_].time.ms));
-
+    if(prediction_info_in_){
+      ui->lineEdit_hour->setText(QString::number(prediction_info_[prediction_index_].time.h));
+      ui->lineEdit_min->setText(QString::number(prediction_info_[prediction_index_].time.m));
+      ui->lineEdit_sec->setText(QString::number(prediction_info_[prediction_index_].time.s));
+      ui->lineEdit_msec->setText(QString::number(prediction_info_[prediction_index_].time.ms));
+    }
+    else if(front_sense_info_in_){
+      ui->lineEdit_hour->setText(QString::number(front_sense_info_[prediction_index_].time.h));
+      ui->lineEdit_min->setText(QString::number(front_sense_info_[prediction_index_].time.m));
+      ui->lineEdit_sec->setText(QString::number(front_sense_info_[prediction_index_].time.s));
+      ui->lineEdit_msec->setText(QString::number(front_sense_info_[prediction_index_].time.ms));
+    }
     ui->lineEdit_ctrl_hour->setText(QString::number(control_info_[control_end_].time.h));
     ui->lineEdit_ctrl_min->setText(QString::number(control_info_[control_end_].time.m));
     ui->lineEdit_ctrl_sec->setText(QString::number(control_info_[control_end_].time.s));
@@ -1594,6 +1669,7 @@ void Widget::on_pushButton_search_clicked()
           }
         }
       }else if(front_sense_info_in_){
+        qDebug() << "search!";
         for(int i = prediction_index_; i < front_sense_info_.size(); ++i)
         {
           if(front_sense_info_[i].obs.num != 0)
