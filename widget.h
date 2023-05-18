@@ -35,6 +35,7 @@ private slots:
 
   void MousePress(QMouseEvent * event);
   void MouseWheel();
+  void PredictionMouseWheel();
   void MouseMove(QMouseEvent * event);
   void SelectionChanged();
   void ComboBoxHorizontalSelectionChanged();
@@ -104,6 +105,7 @@ private:
   bool LoadMap(); //加载地图
   void InputMap(QFile &inFile, int i);    //解析地图文件
   void InputParam(QFile &inFile);     //解析参数文件
+  void InputEdgeFile(QFile &infile);
 
   bool OpenParam();    //打开参数文件
   void InputICUCsv(QFile &inFile);    //解析csv文件
@@ -150,6 +152,8 @@ private:
 
   Eigen::Matrix4d trans_bp_imu;
   QVector<QPointF> map[6];
+  QVector<QPointF> edge_;
+
   ChartView *chartview;
   double min_utm_x, max_utm_x, min_utm_y, max_utm_y;
   double plot_max_x_, plot_min_x_, plot_max_y_, plot_min_y_;

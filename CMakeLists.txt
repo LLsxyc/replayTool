@@ -10,7 +10,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_PREFIX_PATH "/opt/Qt/5.15.2/gcc_64")
+set(CMAKE_PREFIX_PATH "/home/czf/Qt/5.15.2/gcc_64")
 
 set(Qt5_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt5")
 set(Qt5Widgets_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt5Widgets")

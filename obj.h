@@ -231,5 +231,7 @@ public:
   double gps_heading;
   QPointF car[4];
   Obstacle obs;
+  bool is_impact;
+
 };
 #endif // OBJ_H

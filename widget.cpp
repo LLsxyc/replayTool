@@ -166,7 +166,8 @@ void Widget::UIInit(){
   prediction_graph_manage_.insert("map_edge", 0);
   ui->prediction_plot->addGraph();
   prediction_graph_manage_.insert("map_route", 1);
-
+  ui->prediction_plot->addGraph();
+  prediction_graph_manage_.insert("obs", 2);
   //control界面初始化
   ui->control_plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectAxes |
                                   QCP::iSelectLegend | QCP::iSelectPlottables);
@@ -293,6 +294,9 @@ void Widget::UIInit(){
 //combobox signal
   connect(ui->comboBox_horizontal, SIGNAL(selectionChanged()), this, SLOT(ComboBoxSelectionChanged()));
   connect(ui->comboBox_vertical, SIGNAL(selectionChanged()), this, SLOT(ComboBoxSelectionChanged()));
+
+  connect(ui->prediction_plot, SIGNAL(mouseWheel(QWheelEvent*)), this, SLOT(PredictionMouseWheel()));
+  ui->prediction_plot->yAxis->setScaleRatio(ui->prediction_plot->xAxis,1);
 }
 
 void Widget::ComboBoxInit(){
@@ -560,20 +564,24 @@ void Widget::PlotScatter(double x, double y, Qt::GlobalColor color, int index, b
 //    ui->control_plot->replot();
   }
 }
-
+void Widget::PredictionMouseWheel(){
+  ui->prediction_plot->yAxis->setScaleRatio(ui->prediction_plot->xAxis,1);
+}
 void Widget::UpdateCCUMap(){
+  ui->prediction_plot->graph(prediction_graph_manage_.value("map_route"))->data().data()->clear();
   QVector<QPointF> edge;
   QVector<QPointF> route;
   for(int i = 0; i < ccu_map_.size(); ++i){
-    edge.push_back(ccu_map_[i].edge[0]);
-    edge.push_back(ccu_map_[i].edge[1]);
+//    edge.push_back(ccu_map_[i].edge[0]);
+//    edge.push_back(ccu_map_[i].edge[1]);
     route.push_back(ccu_map_[i].route);
   }
-//  PlotScatters(edge, Qt::black, prediction_graph_manage_.value("map_edge"), false, 1, 3, true);
+  PlotScatters(edge_, Qt::red, prediction_graph_manage_.value("map_edge"), false, 1, 3, true);
 //  PlotScatters(route, Qt::darkYellow, prediction_graph_manage_.value("map_route"), false, 1, 3, true);
   PlotScatters(route, Qt::black, prediction_graph_manage_.value("map_route"), false, 1, 3, true);
   ui->prediction_plot->rescaleAxes();
   ui->prediction_plot->replot();
+  ccu_map_.clear();
 //  AdjustPlotRange(true);
 }
 
@@ -611,13 +619,14 @@ void Widget::UpdateCarBox(){
       index++;
     }
 //    qDebug()<<"item size "<<ui->prediction_plot->itemCount();
-    AdjustPlotRange(true);
+//    AdjustPlotRange(true);
     ui->prediction_plot->replot();
 //    ui->prediction_plot->rescaleAxes();
   }
 }
 
 void Widget::UpdateObsBox(){
+  ui->prediction_plot->graph(prediction_graph_manage_.value("obs"))->data().data()->clear();
   QPen pen;
   pen.setColor(Qt::red);
   pen.setStyle(Qt::SolidLine);
@@ -635,26 +644,30 @@ void Widget::UpdateObsBox(){
     int index = 0;
     qDebug()<<"obs start";
     for(int i = 0; i < obstacle_.size() && obstacle_[i].size() > 0; ++i){
-      for(int j = 0; j < obstacle_[i].size() - 1; ++j){
-//        qDebug() << QString::number(obstacle_[i][j].x(),6,'f') << " "
-//                 << QString::number(obstacle_[i][j].y(),6,'f');
-        qDebug() << QString("%1").arg(obstacle_[i][j].x(), 0, 'f', 10)
-                 << QString("%1").arg(obstacle_[i][j].y(), 0, 'f', 10);
+      if(obstacle_[i].size() > 1){
+        for(int j = 0; j < obstacle_[i].size() - 1; ++j){
+            //        qDebug() << QString::number(obstacle_[i][j].x(),6,'f') << " "
+            //                 << QString::number(obstacle_[i][j].y(),6,'f');
+            qDebug() << QString("%1").arg(obstacle_[i][j].x(), 0, 'f', 10)
+                     << QString("%1").arg(obstacle_[i][j].y(), 0, 'f', 10);
+            obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
+            obs_arrows_[index]->start->setCoords(obstacle_[i][j].x(), obstacle_[i][j].y());
+            obs_arrows_[index]->end->setCoords(obstacle_[i][j+1].x(), obstacle_[i][j+1].y());
+            obs_arrows_[index]->setHead(QCPLineEnding::esNone);
+            obs_arrows_[index]->setPen(pen);
+            index++;
+        }
+        qDebug() << QString("%1").arg(obstacle_[i][obstacle_[i].size() - 1].x(), 0, 'f', 10)
+                 << QString("%1").arg(obstacle_[i][obstacle_[i].size() - 1].y(), 0, 'f', 10);
         obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-        obs_arrows_[index]->start->setCoords(obstacle_[i][j].x(), obstacle_[i][j].y());
-        obs_arrows_[index]->end->setCoords(obstacle_[i][j+1].x(), obstacle_[i][j+1].y());
+        obs_arrows_[index]->start->setCoords(obstacle_[i][obstacle_[i].size() - 1].x(), obstacle_[i][obstacle_[i].size() - 1].y());
+        obs_arrows_[index]->end->setCoords(obstacle_[i][0].x(),obstacle_[i][0].y());
         obs_arrows_[index]->setHead(QCPLineEnding::esNone);
         obs_arrows_[index]->setPen(pen);
         index++;
+      }else if(obstacle_[i].size() == 1){
+        PlotScatter(obstacle_[i][0].x(),obstacle_[i][0].y(), Qt::red,prediction_graph_manage_.value("obs"),false,1,10,true);
       }
-      qDebug() << QString("%1").arg(obstacle_[i][obstacle_[i].size() - 1].x(), 0, 'f', 10)
-                 << QString("%1").arg(obstacle_[i][obstacle_[i].size() - 1].y(), 0, 'f', 10);
-      obs_arrows_[index] = new QCPItemLine(ui->prediction_plot);
-      obs_arrows_[index]->start->setCoords(obstacle_[i][obstacle_[i].size() - 1].x(), obstacle_[i][obstacle_[i].size() - 1].y());
-      obs_arrows_[index]->end->setCoords(obstacle_[i][0].x(),obstacle_[i][0].y());
-      obs_arrows_[index]->setHead(QCPLineEnding::esNone);
-      obs_arrows_[index]->setPen(pen);
-      index++;
     }
     qDebug()<<"obs end";
     ui->prediction_plot->replot();
@@ -1039,6 +1052,8 @@ void Widget::AdjustPlotRange(bool prediction){
         ui->prediction_plot->replot();
       }
     }
+//
+
   }
   else
   {
@@ -1157,6 +1172,8 @@ void Widget::MouseWheel()
     ui->control_plot->axisRect()->setRangeZoomAxes(axes);
     ui->control_plot->axisRect()->setRangeZoom(Qt::Horizontal|Qt::Vertical);
   }
+//    ui->prediction_plot->yAxis->setScaleRatio(ui->prediction_plot->xAxis,1);
+
 }
 
 void Widget::MouseMove(QMouseEvent * event)
@@ -1672,7 +1689,7 @@ void Widget::on_pushButton_search_clicked()
         qDebug() << "search!";
         for(int i = prediction_index_; i < front_sense_info_.size(); ++i)
         {
-          if(front_sense_info_[i].obs.num != 0)
+          if(front_sense_info_[i].is_impact == 1)
           {
             prediction_index_ = i;
             if(!test_)
@@ -1682,7 +1699,7 @@ void Widget::on_pushButton_search_clicked()
         }
         for(int i = 0; i < prediction_index_; ++i)
         {
-          if(front_sense_info_[i].obs.num != 0)
+          if(front_sense_info_[i].is_impact == 0)
           {
             prediction_index_ = i;
             if(!test_)
@@ -1837,6 +1854,13 @@ bool Widget::OpenFile(){
         InputICULog(file);
       }
     }
+    else if(str_path.indexOf("MCB") != -1)
+    {
+      InputEdgeFile(file);
+    }
+    else if(str_path.indexOf("OCSL") != -1){
+      InputEdgeFile(file);
+    }
     else if(str_path.indexOf("result") != -1)//input prediction file
     {
       prediction_index_ = 0;
@@ -1854,7 +1878,7 @@ bool Widget::OpenFile(){
       car_.clear();
       InputCCUCsv(file);
     }
-    else if(str_path.indexOf("front") != -1)
+    else if(str_path.indexOf("sense") != -1)
     {
       prediction_index_ = 0;
       prediction_info_in_ = false;
@@ -1979,6 +2003,36 @@ void Widget::InputMap(QFile &inFile, int i)
   {
     UpdateCCUMap();
   }
+}
+
+void Widget::InputEdgeFile(QFile &infile){
+  QByteArray rawData = infile.readLine();
+  QPointF point;
+  while(rawData != "")
+  {
+    char a;
+    if(infile.fileName().indexOf("MCB") != -1)
+      a = '	';
+    else if(infile.fileName().indexOf("OCSL") != -1)
+      a = ',';
+    QList<QByteArray> ba = rawData.split(a);
+    //    qDebug() << ba.size();
+    if(ba.size() < 12) continue;
+    double heading, utm_x, utm_y, utm_z;
+    heading = 0;
+    //经度
+    double lat = ba[3].toDouble();
+    //纬度
+    double lng = ba[4].toDouble();
+
+    //     GPS 转 UTM
+    convertWGS84ToUTM(lng,lat,heading,&utm_x,&utm_y,&utm_z);
+    point.setX(utm_x);
+    point.setY(utm_y);
+    edge_.push_back(point);
+    rawData = infile.readLine();
+  }
+  UpdateCCUMap();
 }
 
 /* @brief: 解析配置文件
@@ -2353,12 +2407,15 @@ void Widget::InputFrontSenseCsv(QFile &file){
     QList<QByteArray> ba = raw_data.split(a);
     if(ba.size() < 90) continue;
     info.time = TimeSplit(ba[0],true);
-    info.gps_lng = ba[2+1].toDouble();
-    info.gps_lat = ba[3+1].toDouble();
-    info.gps_heading = ba[4+1].toDouble();
+    info.gps_lng = ba[2].toDouble();
+    info.gps_lat = ba[3].toDouble();
+    info.gps_heading = ba[4].toDouble();
     double utm_x,utm_y,utm_z;
     convertWGS84ToUTM(info.gps_lat, info.gps_lng, info.gps_heading, &utm_x, &utm_y ,&utm_z);
-    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 13.4, 6.7, 9.2);
+    /*guo neng bei dian*/
+//    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 14.8, 8.0, 7.3);
+       /*bai yun*/
+    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 13.1, 6.7, 6.9);
     for(int i = 0; i < 4 ; ++i){
       QPointF point;
       double x = ba[28+2*i].toDouble();
@@ -2370,12 +2427,37 @@ void Widget::InputFrontSenseCsv(QFile &file){
         info.car[i] = calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point);
       }
     }
-    obs.num = ba[46].toInt();
-    for(int i = 0; i < obs.num; ++i){
+    info.is_impact = ba[6].toInt() > 0 ? true : false;
+
+    if(ba[7].toInt() == 0){
+      obs.num = ba[46].toInt() > 16 ? 16 : ba[46].toInt();
+      for(int i = 0; i < obs.num; ++i){
+        QPointF point;
+        point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+        obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+      }
+    }else if(ba[7].toInt() == 1){
+      obs.num = max(ba[11].toInt(),ba[12].toInt());
+//      for(int i = 0; i < obs.num; ++i){
+//        QPointF point;
+//        point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+//        obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+//      }
       QPointF point;
-      point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+      point = QPointF(ba[84].toDouble(), ba[85].toDouble());
       obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+    }else if(ba[7].toInt() == 255){
+      obs.num = 0;
+      //      for(int i = 0; i < obs.num; ++i){
+      //        QPointF point;
+      //        point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+      //        obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+      //      }
+//      QPointF point;
+//      point = QPointF(ba[84].toDouble(), ba[85].toDouble());
+//      obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
     }
+
     info.obs = obs;
     front_sense_info_.push_back(info);
   }
