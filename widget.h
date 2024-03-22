@@ -114,6 +114,7 @@ private:
 
 /*测试时间戳同步用临时函数*/
   void InputFrontSenseCsv(QFile &File);
+  void InputV2VCsv(QFile &File);
 
   bool OpenFile();
   void InputCCUCsv(QFile &inFile);

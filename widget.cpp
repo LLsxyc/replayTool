@@ -581,7 +581,7 @@ void Widget::UpdateCCUMap(){
   PlotScatters(route, Qt::black, prediction_graph_manage_.value("map_route"), false, 1, 3, true);
   ui->prediction_plot->rescaleAxes();
   ui->prediction_plot->replot();
-  ccu_map_.clear();
+//  ccu_map_.clear();
 //  AdjustPlotRange(true);
 }
 
@@ -1836,7 +1836,7 @@ bool Widget::OpenFile(){
       QMessageBox::information(this, "Error", "文件读取错误！");
       return false;
     }
-    else if(str_path.right(3) != "csv" && str_path.right(3) != "log" && str_path.right(3) != "lpx")
+    else if(str_path.right(3) != "csv" && str_path.right(3) != "log" && str_path.right(3) != "lpx" && str_path.right(4) != "toml")
     {
       QMessageBox::information(this, "Error", "文件格式错误！");
       return false;
@@ -1859,6 +1859,9 @@ bool Widget::OpenFile(){
       InputEdgeFile(file);
     }
     else if(str_path.indexOf("OCSL") != -1){
+      InputEdgeFile(file);
+    }
+    else if(str_path.indexOf("line1") != -1){
       InputEdgeFile(file);
     }
     else if(str_path.indexOf("result") != -1)//input prediction file
@@ -1885,6 +1888,7 @@ bool Widget::OpenFile(){
       front_sense_info_in_ = true;
       ui->checkBox_prediction->setEnabled(true);
       vehicle_box_in_ = false;
+      front_sense_info_.clear();
       InputFrontSenseCsv(file);
       test_ = true;
     }
@@ -1902,6 +1906,9 @@ bool Widget::OpenFile(){
     {
       qDebug() << "map!";
       InputMap(file,0);
+    }
+    else if(str_path.indexOf("global") != -1){
+      InputParam(file);
     }
     qDebug() << "打开文件" << str_path << "成功！";
   }
@@ -2011,19 +2018,27 @@ void Widget::InputEdgeFile(QFile &infile){
   while(rawData != "")
   {
     char a;
-    if(infile.fileName().indexOf("MCB") != -1)
+    if(infile.fileName().indexOf("MCB") != -1 || infile.fileName().indexOf("line1") != -1)
       a = '	';
     else if(infile.fileName().indexOf("OCSL") != -1)
       a = ',';
     QList<QByteArray> ba = rawData.split(a);
     //    qDebug() << ba.size();
-    if(ba.size() < 12) continue;
-    double heading, utm_x, utm_y, utm_z;
+//    if(ba.size() < 12) continue;
+    double heading, utm_x, utm_y, utm_z,lng,lat;
     heading = 0;
+    if(infile.fileName().indexOf("OCSL") != -1){
+      //经度
+      lat = ba[3].toDouble();
+      //纬度
+      lng = ba[4].toDouble();
+    }else{
+      lat = ba[3].toDouble();
+      //纬度
+      lng = ba[4].toDouble();
+    }
     //经度
-    double lat = ba[3].toDouble();
-    //纬度
-    double lng = ba[4].toDouble();
+
 
     //     GPS 转 UTM
     convertWGS84ToUTM(lng,lat,heading,&utm_x,&utm_y,&utm_z);
@@ -2396,16 +2411,101 @@ void Widget::InputCCUCsv(QFile &infile){
     }
   }
 }
+void Widget::InputV2VCsv(QFile &file){
+  QByteArray raw_data = file.readLine();
+  char a = ',';
+  while(raw_data != ""){
+    int aaaa = 0;
+    FrontSenseInfo info;
+    Obstacle obs;
+    raw_data = file.readLine();
+    QList<QByteArray> ba = raw_data.split(a);
+    if(ba.size() < 90) {
+      qDebug()<<"iiiii "<<aaaa;
+      continue;
+    }
+    aaaa++;
+    info.time = TimeSplit(ba[0],true);
+    info.gps_lng = ba[2].toDouble();
+    info.gps_lat = ba[3].toDouble();
+    info.gps_heading = ba[4].toDouble();
+    double utm_x,utm_y,utm_z;
+    convertWGS84ToUTM(info.gps_lat, info.gps_lng, info.gps_heading, &utm_x, &utm_y ,&utm_z);
+    /*guo neng bei dian*/
+    //    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 14.8, 8.0, 7.3);
+    /*bai yun*/
+    //    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 13.4, 6.7, 9.8);
+    /*yong shun*/
+    //    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 8.85, 3.11, 6.5);
+    /*da pai*/
+    //    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 9.96, 3.70, 6.5);
+    /*ju long*/
+    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, vehicle_length, vehicle_width, vehicle_centroid_head_length);
+    for(int i = 0; i < 4 ; ++i){
+      QPointF point;
+      double x = ba[28+2*i].toDouble();
+      double y = ba[29+2*i].toDouble();
+      if(x == 0 && y ==0){
+        info.car[i] = QPointF(0,0);
+      }else{
+        point = QPointF(ba[28+2*i].toDouble(), ba[29+2*i].toDouble());
+        info.car[i] = calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point);
+      }
+    }
+    info.is_impact = ba[6].toInt() > 0 ? true : false;
+
+    if(ba[7].toInt() == 0){
+      obs.num = ba[46].toInt() > 16 ? 16 : ba[46].toInt();
+      for(int i = 0; i < obs.num; ++i){
+        QPointF point;
+        point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+        obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+      }
+    }else if(ba[7].toInt() == 1){
+      obs.num = max(ba[11].toInt(),ba[12].toInt());
+      //      for(int i = 0; i < obs.num; ++i){
+      //        QPointF point;
+      //        point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+      //        obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+      //      }
+      QPointF point;
+      point = QPointF(ba[84].toDouble(), ba[85].toDouble());
+      obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+    }else if(ba[7].toInt() == 255){
+      obs.num = 0;
+      //      for(int i = 0; i < obs.num; ++i){
+      //        QPointF point;
+      //        point = QPointF(ba[49+2*i].toDouble(), ba[50+2*i].toDouble());
+      //        obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+      //      }
+      //      QPointF point;
+      //      point = QPointF(ba[84].toDouble(), ba[85].toDouble());
+      //      obs.vertex.push_back(calcPoint(info.gps_lng, info.gps_lat, info.gps_heading, point));
+    }
+
+    info.obs = obs;
+    front_sense_info_.push_back(info);
+  }
+  sort(front_sense_info_.begin(),front_sense_info_.end(),
+       [](const FrontSenseInfo &a, const FrontSenseInfo &b){
+           return a.time > b.time;
+       });
+}
 
 void Widget::InputFrontSenseCsv(QFile &file){
   QByteArray raw_data = file.readLine();
   char a = ',';
   while(raw_data != ""){
+    int aaaa = 0;
     FrontSenseInfo info;
     Obstacle obs;
     raw_data = file.readLine();
     QList<QByteArray> ba = raw_data.split(a);
-    if(ba.size() < 90) continue;
+    if(ba.size() < 90) {
+      qDebug()<<"iiiii "<<aaaa;
+      continue;
+    }
+    aaaa++;
     info.time = TimeSplit(ba[0],true);
     info.gps_lng = ba[2].toDouble();
     info.gps_lat = ba[3].toDouble();
@@ -2415,7 +2515,13 @@ void Widget::InputFrontSenseCsv(QFile &file){
     /*guo neng bei dian*/
 //    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 14.8, 8.0, 7.3);
        /*bai yun*/
-    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 13.1, 6.7, 6.9);
+//    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 13.4, 6.7, 9.8);
+    /*yong shun*/
+//    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 8.85, 3.11, 6.5);
+    /*da pai*/
+//    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, 9.96, 3.70, 6.5);
+    /*ju long*/
+    calcCorner(info.gps_heading,QPointF(utm_x,utm_y), info.local_car, vehicle_length, vehicle_width, vehicle_centroid_head_length);
     for(int i = 0; i < 4 ; ++i){
       QPointF point;
       double x = ba[28+2*i].toDouble();
